@@ -4,61 +4,59 @@ import { db } from "./db";
 import GoogleProvider from "next-auth/providers/google";
 
 function getGoogleCredentials() {
-  const clientId = process.env.GOOGLE_CLIENT_ID;
-  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
 
-  if (!clientId || clientId.length === 0)
-    throw new Error("Missing GOOGLE_CLIENT_ID");
-  if (!clientSecret || clientSecret.length === 0)
-    throw new Error("Missing GOOGLE_CLIENT_SECRET");
+    if (!clientId || clientId.length === 0)
+        throw new Error("Missing GOOGLE_CLIENT_ID");
+    if (!clientSecret || clientSecret.length === 0)
+        throw new Error("Missing GOOGLE_CLIENT_SECRET");
 
-  console.log("hello!");
-
-  return { clientId, clientSecret };
+    return { clientId, clientSecret };
 }
 
 export const authOptions: NextAuthOptions = {
-  adapter: UpstashRedisAdapter(db),
-  session: {
-    strategy: "jwt",
-  },
-  pages: {
-    signIn: "/login",
-  },
-  providers: [
-    GoogleProvider({
-      clientId: getGoogleCredentials().clientId,
-      clientSecret: getGoogleCredentials().clientSecret,
-    }),
-  ],
-  callbacks: {
-    async jwt({ token, user }) {
-      const dbUser = (await db.get(`user:${token.id}`)) as User | null;
-
-      if (!dbUser) {
-        token.id = user!.id;
-        return token;
-      }
-
-      return {
-        id: dbUser.id,
-        name: dbUser.name,
-        email: dbUser.email,
-        picture: dbUser.image,
-      };
+    adapter: UpstashRedisAdapter(db),
+    session: {
+        strategy: "jwt",
     },
-    async session({ session, token }) {
-      if (token) {
-        session.user.id = token.id;
-        session.user.name = token.name;
-        session.user.email = token.email;
-        session.user.image = token.picture;
-      }
+    pages: {
+        signIn: "/login",
+    },
+    providers: [
+        GoogleProvider({
+            clientId: getGoogleCredentials().clientId,
+            clientSecret: getGoogleCredentials().clientSecret,
+        }),
+    ],
+    callbacks: {
+        async jwt({ token, user }) {
+            const dbUser = (await db.get(`user:${token.id}`)) as User | null;
 
-      return session;
+            if (!dbUser) {
+                if (user) token.id = user!.id;
+                return token;
+            }
+
+            return {
+                id: dbUser.id,
+                name: dbUser.name,
+                email: dbUser.email,
+                picture: dbUser.image,
+            };
+        },
+        async session({ session, token }) {
+            if (token) {
+                session.user.id = token.id;
+                session.user.name = token.name;
+                session.user.email = token.email;
+                session.user.image = token.picture;
+            }
+
+            return session;
+        },
+        redirect() {
+            return "/dashboard";
+        },
     },
-    redirect() {
-      return "/dashboard";
-    },
-  },
 };
