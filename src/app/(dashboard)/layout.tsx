@@ -1,6 +1,8 @@
-import { Icon, Icons } from "@/components/ui/Icons";
-import SignOutButton from "@/components/ui/SignOutButton";
+import FriendRequestsSidebarOption from "@/components/FriendRequestsSidebarOption";
+import { Icon, Icons } from "@/components/Icons";
+import SignOutButton from "@/components/SignOutButton";
 import { authOptions } from "@/lib/auth";
+import { fetchRedis } from "@/lib/helpers/redis";
 import { getServerSession } from "next-auth";
 import Image from "next/image";
 import Link from "next/link";
@@ -30,6 +32,13 @@ const sideBarOptions: SidebarOption[] = [
 const layout: FC<layoutProps> = async ({ children }) => {
     const session = await getServerSession(authOptions);
     if (!session) notFound();
+
+    const unseenRequestCount = (
+        (await fetchRedis(
+            "smembers",
+            `user:${session.user.id}:incoming_friend_requests`
+        )) as User[]
+    ).length;
 
     return (
         <div className="w-full h-screen flex">
@@ -71,6 +80,12 @@ const layout: FC<layoutProps> = async ({ children }) => {
                                     );
                                 })}
                             </ul>
+                        </li>
+                        <li>
+                            <FriendRequestsSidebarOption
+                                sessionId={session.user.id}
+                                initialUnseenRequestCount={unseenRequestCount}
+                            />
                         </li>
                         <li className="-mx-6 mt-auto flex items-center">
                             <div className="flex flex-1 items-center gap-x-4 px-6 py-3 text-sm font-semibold leading-6 text-gray-900">
