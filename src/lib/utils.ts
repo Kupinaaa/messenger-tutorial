@@ -7,7 +7,6 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function chatHrefConstructor(id1: string, id2: string) {
-    console.log(id1, id2);
     if (id1 > id2) {
         // sort
         const temp: string = id1;
